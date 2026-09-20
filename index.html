@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#080808">
+<title>Saif Elite</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+<style>
+:root{
+  --gold:#ffd700; --fire1:#ff6600; --fire2:#ff9900;
+  --bg:#080808; --surface:#121110; --surface2:#1b1917;
+  --text:#f4f1ec; --muted:rgba(244,241,236,.58); --line:rgba(255,215,0,.14);
+  --rail:rgba(12,11,10,.74); --side-w:272px; --tab-h:66px;
+  --font:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --display:'Syne','Outfit',system-ui,sans-serif;
+  --rs:1; --content-w:1040px;
+  --r1:calc(12px * var(--rs)); --r2:calc(20px * var(--rs)); --r3:calc(28px * var(--rs));
+}
+:root[data-theme="light"]{
+  --gold:#b87400; --bg:#efefef; --surface:#ffffff; --surface2:#f5f5f5;
+  --text:#141414; --muted:rgba(20,20,20,.58); --line:rgba(184,116,0,.24); --rail:rgba(255,255,255,.78);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--font); background-color:var(--bg); color:var(--text); min-height:100vh; overflow-x:hidden;
+  background-image:radial-gradient(1100px 520px at 8% -8%,rgba(255,102,0,.09),transparent 62%),radial-gradient(900px 480px at 100% 100%,rgba(255,215,0,.05),transparent 60%);
+  background-attachment:fixed;
+}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+[hidden]{display:none!important}
+
+.app{position:relative;z-index:1;display:grid;grid-template-columns:var(--side-w) minmax(0,1fr);min-height:100vh}
+
+/* ---------- desktop rail ---------- */
+.side{position:sticky;top:0;height:100vh;padding:28px 16px 20px;display:flex;flex-direction:column;gap:26px;background:var(--rail);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-right:1px solid var(--line)}
+.brand{font-family:var(--display);font-weight:800;font-size:1.3rem;letter-spacing:.01em;padding:0 12px;background:linear-gradient(90deg,var(--fire1),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;overflow-wrap:anywhere}
+.nav{display:flex;flex-direction:column;gap:4px;overflow-y:auto}
+.nl{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:var(--r1);color:var(--muted);font-weight:500;transition:background .2s,color .2s}
+.nl i{width:20px;text-align:center;font-size:1.05rem}
+.nl:hover{background:rgba(255,153,0,.08);color:var(--text)}
+.nl.on{background:rgba(255,153,0,.13);color:var(--gold);box-shadow:inset 3px 0 0 var(--fire2)}
+.side-foot{margin-top:auto;padding:0 6px}
+.icon-btn{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:var(--r1);background:transparent;border:1px solid var(--line);color:var(--gold);transition:border-color .2s,background .2s}
+.icon-btn:hover{border-color:var(--gold);background:rgba(255,153,0,.08)}
+
+/* ---------- content ---------- */
+.main{min-width:0}
+.view{width:100%;max-width:var(--content-w);padding:36px clamp(18px,4vw,48px) 70px;min-height:100vh}
+.view.enter{animation:fade .25s ease both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.mod{display:block;font-family:var(--font);color:var(--text)}
+
+/* ---------- mobile chrome ---------- */
+.topbar{display:none;position:sticky;top:0;z-index:20;height:56px;align-items:center;justify-content:space-between;padding:0 14px 0 18px;background:var(--rail);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+.topbar .brand{padding:0}
+.topbar .icon-btn{width:38px;height:38px}
+.tabbar{display:none;position:fixed;left:0;right:0;bottom:0;z-index:30;height:calc(var(--tab-h) + env(safe-area-inset-bottom));padding:6px 6px env(safe-area-inset-bottom);background:var(--rail);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-top:1px solid var(--line)}
+.tl{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:.7rem;font-weight:500;color:var(--muted);background:none;border:0;border-radius:var(--r1)}
+.tl i{font-size:1.15rem}
+.tl span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+.tl.on{color:var(--gold)}
+.sheet{position:fixed;inset:0;z-index:50}
+.sheet-bg{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.sheet-card{position:absolute;left:0;right:0;bottom:0;padding:14px 14px calc(var(--tab-h) + 16px + env(safe-area-inset-bottom));border-radius:var(--r3) var(--r3) 0 0;background:var(--surface);border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+
+@media(max-width:899px){
+  .app{display:block}
+  .side{display:none}
+  .topbar,.tabbar{display:flex}
+  .view{padding:20px 16px calc(var(--tab-h) + 36px + env(safe-area-inset-bottom));min-height:calc(100vh - 56px)}
+}
+
+/* ---------- states ---------- */
+.sk{border-radius:var(--r3);background:linear-gradient(100deg,var(--surface) 30%,var(--surface2) 50%,var(--surface) 70%);background-size:220% 100%;animation:sh 1.3s linear infinite}
+.sk1{height:300px}.sk2{height:140px;margin-top:22px}
+@keyframes sh{to{background-position:-220% 0}}
+.state{max-width:520px;margin:10vh auto 0;padding:30px;border-radius:var(--r3);background:var(--surface);border:1px solid var(--line)}
+.state i.big{font-size:1.6rem;color:var(--gold)}
+.state h2{font-family:var(--display);font-size:1.3rem;margin:14px 0 8px}
+.state p{color:var(--muted);line-height:1.65}
+.btn{display:inline-flex;align-items:center;gap:8px;margin-top:18px;padding:11px 20px;border-radius:var(--r1);background:linear-gradient(135deg,var(--fire1),var(--fire2));color:#160800;font-weight:700}
+.toast{position:fixed;left:50%;bottom:calc(var(--tab-h) + 22px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:80;max-width:min(92vw,420px);padding:12px 18px;border-radius:var(--r1);background:var(--surface2);border:1px solid var(--line);color:var(--text);font-size:.9rem;box-shadow:0 12px 40px rgba(0,0,0,.45)}
+@media(min-width:900px){.toast{bottom:28px}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<div id="globalLayer"></div>
+
+<div class="app">
+  <aside class="side">
+    <a class="brand" href="#/home" id="brandSide">SAIF ELITE</a>
+    <nav class="nav" id="nav" aria-label="Main"></nav>
+    <div class="side-foot">
+      <button class="icon-btn" id="themeBtnSide" type="button" aria-label="Switch light or dark theme" hidden><i class="fas fa-moon"></i></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <a class="brand" href="#/home" id="brandTop">SAIF ELITE</a>
+      <button class="icon-btn" id="themeBtnTop" type="button" aria-label="Switch light or dark theme" hidden><i class="fas fa-moon"></i></button>
+    </header>
+    <main class="view" id="view" aria-live="polite">
+      <div class="sk sk1"></div><div class="sk sk2"></div>
+    </main>
+  </div>
+</div>
+
+<nav class="tabbar" id="tabs" aria-label="Main"></nav>
+<div class="sheet" id="sheet" hidden>
+  <div class="sheet-bg" id="sheetBg"></div>
+  <div class="sheet-card" role="dialog" aria-label="More pages" id="sheetList"></div>
+</div>
+
+<noscript><div class="state"><h2>JavaScript is required</h2><p>Turn on JavaScript in your browser to use this site.</p></div></noscript>
+
+<script>
+(function () {
+'use strict';
+
+/* ================= CONFIG ================= */
+var firebaseConfig = {
+  apiKey: "AIzaSyC3Kk8wYdOSvu3eZYLwH4-ebI77Q9dwmOY",
+  authDomain: "saif-elite.firebaseapp.com",
+  databaseURL: "https://saif-elite-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "saif-elite",
+  storageBucket: "saif-elite.firebasestorage.app",
+  messagingSenderId: "542024397008",
+  appId: "1:542024397008:web:71f8bba53c2eec701d6ed5",
+  measurementId: "G-N2BN7X7MJT"
+};
+var FA = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css';
+var SAFE = new URLSearchParams(location.search).has('safe');   // ?safe=1 skips all background modules (theme, style, effects, music)
+var FONTS = { 'Outfit': 1, 'Inter': 1, 'Poppins': 1, 'Montserrat': 1, 'DM Sans': 1, 'Manrope': 1, 'Syne': 1, 'Playfair Display': 1, 'system': 1 };
+
+/* ================= HELPERS ================= */
+var $ = function (s) { return document.querySelector(s); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function safeUrl(u) { u = String(u || '').trim(); return /^\s*(javascript|data|vbscript):/i.test(u) ? '#' : u; }
+function iconClass(i) {
+  i = String(i || 'fa-cube').trim();
+  if (/\s/.test(i)) return i;
+  if (i.indexOf('fa-') !== 0) i = 'fa-' + i;
+  return 'fas ' + i;
+}
+function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+var toastTimer;
+function toast(msg) {
+  var t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast'; document.body.appendChild(t); }
+  t.textContent = msg; t.hidden = false; clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { t.hidden = true; }, 3800);
+}
+function stateHTML(icon, title, text, extra) {
+  return '<div class="state"><i class="big fas ' + icon + '"></i><h2>' + esc(title) + '</h2><p>' + esc(text) + '</p>' + (extra || '') + '</div>';
+}
+
+/* ================= FIREBASE ================= */
+var db = null;
+try {
+  if (typeof firebase === 'undefined') throw new Error('firebase sdk missing');
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.database();
+} catch (e) {
+  console.error(e);
+  $('#view').innerHTML = stateHTML('fa-plug-circle-xmark', 'Cannot reach the data server', 'Check your internet connection and reload the page.');
+  return;
+}
+
+/* ================= STATE ================= */
+var MODS = null;            // null = not loaded yet
+var THEME = {};             // set by the Theme module through ctx.site.setTheme
+var globals = {};           // id -> {key, destroy}
+var current = { key: null, destroy: null, route: null };
+var mountToken = 0;
+
+function routeOf(m) { return String(m.route || m.id); }
+function fp(m) { return JSON.stringify([m.version, m.updatedAt, m.enabled, m.source, m.file, m.route, m.title, m.icon, m.settings]); }
+function pages() {
+  return Object.keys(MODS || {}).map(function (id) { var m = MODS[id]; m.id = id; return m; })
+    .filter(function (m) { return m.enabled !== false && (m.type || 'page') === 'page'; })
+    .sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+}
+function navList() { return pages().filter(function (m) { return m.inNav !== false; }); }
+function navData() {
+  return navList().map(function (m) { return { id: m.id, title: m.title || m.id, route: routeOf(m), icon: iconClass(m.icon), desc: m.desc || '' }; });
+}
+function routeNow() { return location.hash.replace(/^#\/?/, '').split('?')[0].replace(/\/+$/, '') || 'home'; }
+function brandText() { return THEME.brand || 'SAIF ELITE'; }
+
+/* ================= THEME and STYLE (driven by their own modules) ================= */
+function applyTheme() {
+  var toggleOn = THEME.toggle === true;
+  var mode = (toggleOn && store('saif_mode')) || THEME.mode || 'dark';
+  if (mode === 'auto') mode = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  if (mode !== 'light') mode = 'dark';
+  var root = document.documentElement, v = THEME.vars || {};
+  root.dataset.theme = mode;
+  ['fire1', 'fire2'].forEach(function (k) { v[k] ? root.style.setProperty('--' + k, v[k]) : root.style.removeProperty('--' + k); });
+  ['gold', 'bg', 'surface', 'text'].forEach(function (k) {
+    (mode === 'dark' && v[k]) ? root.style.setProperty('--' + k, v[k]) : root.style.removeProperty('--' + k);
+  });
+  document.querySelector('meta[name=theme-color]').setAttribute('content', mode === 'dark' ? (v.bg || '#080808') : '#efefef');
+  var ic = mode === 'dark' ? 'fa-moon' : 'fa-sun';
+  ['#themeBtnSide', '#themeBtnTop'].forEach(function (s) { $(s).innerHTML = '<i class="fas ' + ic + '"></i>'; $(s).hidden = !toggleOn; });
+  $('#brandSide').textContent = brandText();
+  $('#brandTop').textContent = brandText();
+}
+function setTheme(t) { THEME = t || {}; store('saif_theme', JSON.stringify(THEME)); applyTheme(); }
+function resetTheme() { THEME = {}; store('saif_theme', null); applyTheme(); }
+function toggleTheme() {
+  store('saif_mode', document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  applyTheme();
+}
+$('#themeBtnSide').addEventListener('click', toggleTheme);
+$('#themeBtnTop').addEventListener('click', toggleTheme);
+
+function fontStack(n) { return n === 'system' ? "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif" : "'" + n + "',system-ui,sans-serif"; }
+function loadFont(n) {
+  if (n === 'system' || n === 'Outfit' || n === 'Syne') return;
+  var id = 'gf-' + n.replace(/\s+/g, '-');
+  if (document.getElementById(id)) return;
+  var l = document.createElement('link'); l.id = id; l.rel = 'stylesheet';
+  l.href = 'https://fonts.googleapis.com/css2?family=' + encodeURIComponent(n).replace(/%20/g, '+') + ':wght@400;500;600;700;800&display=swap';
+  document.head.appendChild(l);
+}
+function setStyle(s) {
+  s = s || {};
+  var r = document.documentElement.style;
+  var body = FONTS[s.bodyFont] ? s.bodyFont : 'Outfit', disp = FONTS[s.displayFont] ? s.displayFont : 'Syne';
+  loadFont(body); loadFont(disp);
+  r.setProperty('--font', fontStack(body));
+  r.setProperty('--display', fontStack(disp));
+  r.setProperty('--rs', String({ sharp: 0.35, soft: 1, round: 1.5 }[s.roundness] || 1));
+  r.setProperty('--content-w', ({ narrow: 860, normal: 1040, wide: 1240 }[s.width] || 1040) + 'px');
+  store('saif_style', JSON.stringify(s));
+}
+function resetStyle() {
+  ['--font', '--display', '--rs', '--content-w'].forEach(function (k) { document.documentElement.style.removeProperty(k); });
+  store('saif_style', null);
+}
+var SITE_API = { setTheme: setTheme, resetTheme: resetTheme, setStyle: setStyle, resetStyle: resetStyle };
+
+// apply the last known look immediately so there is no flash while modules load
+if (!SAFE) {
+  try { var c1 = JSON.parse(store('saif_theme') || 'null'); if (c1) { THEME = c1; } } catch (e) {}
+  try { var c2 = JSON.parse(store('saif_style') || 'null'); if (c2) setStyle(c2); } catch (e) {}
+}
+applyTheme();
+
+/* ================= NAV ================= */
+function renderNav() {
+  var list = navList(), cur = routeNow();
+  function side(m) {
+    var r = routeOf(m), on = r === cur;
+    return '<a class="nl' + (on ? ' on' : '') + '" href="#/' + esc(r) + '"' + (on ? ' aria-current="page"' : '') + '><i class="' + esc(iconClass(m.icon)) + '"></i><span>' + esc(m.title || m.id) + '</span></a>';
+  }
+  function tab(m) {
+    var r = routeOf(m), on = r === cur;
+    return '<a class="tl' + (on ? ' on' : '') + '" href="#/' + esc(r) + '"' + (on ? ' aria-current="page"' : '') + '><i class="' + esc(iconClass(m.icon)) + '"></i><span>' + esc(m.title || m.id) + '</span></a>';
+  }
+  $('#nav').innerHTML = list.map(side).join('');
+  var main = list, more = [];
+  if (list.length > 5) { main = list.slice(0, 4); more = list.slice(4); }
+  var moreOn = more.some(function (m) { return routeOf(m) === cur; });
+  $('#tabs').innerHTML = main.map(tab).join('') +
+    (more.length ? '<button type="button" class="tl' + (moreOn ? ' on' : '') + '" id="moreBtn"><i class="fas fa-ellipsis"></i><span>More</span></button>' : '');
+  $('#sheetList').innerHTML = more.map(side).join('');
+  var mb = $('#moreBtn'); if (mb) mb.addEventListener('click', function () { $('#sheet').hidden = false; });
+}
+$('#sheetBg').addEventListener('click', function () { $('#sheet').hidden = true; });
+$('#sheetList').addEventListener('click', function (e) { if (e.target.closest('a')) $('#sheet').hidden = true; });
+
+/* ================= MODULE RUNTIME ================= */
+var codeCache = {};
+async function loadCode(m) {
+  var key = m.id + '@' + (m.version || 0) + '@' + (m.updatedAt || 0) + '@' + (m.source || '') + '@' + (m.file || '');
+  if (codeCache[key] !== undefined) return codeCache[key];
+  var code;
+  if (m.source === 'file') {
+    var f = String(m.file || '');
+    if (!/^[\w\-./]+\.js$/.test(f) || f.indexOf('..') !== -1) throw new Error('Bad file path: ' + f);
+    var res = await fetch(f + '?v=' + (m.version || 0) + '_' + (m.updatedAt || 0));
+    if (!res.ok) throw new Error('File not found: ' + f);
+    code = await res.text();
+  } else {
+    var snap = await db.ref('site/code/' + m.id).once('value');
+    code = snap.val();
+    if (typeof code !== 'string' || !code.trim()) throw new Error('Module code is empty');
+  }
+  codeCache[key] = code;
+  return code;
+}
+
+/* Runs one module inside its own shadow-DOM box. Never throws: returns {host, destroy, error}. */
+async function mountModule(m) {
+  var host = document.createElement('div');
+  host.className = 'mod';
+  host.setAttribute('data-mod', m.id);
+  var shadow = host.attachShadow({ mode: 'open' });
+  shadow.innerHTML = '<link rel="stylesheet" href="' + FA + '"><style>:host{display:block}*,*::before,*::after{box-sizing:border-box}img{max-width:100%}a{color:inherit;text-decoration:none}button{font:inherit}</style><div id="app"></div>';
+  var app = shadow.getElementById('app'), cleanups = [];
+  var ctx = {
+    id: m.id,
+    meta: { title: m.title || m.id, route: routeOf(m), icon: m.icon || '' },
+    settings: JSON.parse(JSON.stringify(m.settings || {})),
+    nav: navData(),
+    host: host, root: app, db: db, firebase: firebase, site: SITE_API,
+    esc: esc, safeUrl: safeUrl, toast: toast,
+    navigate: function (r) { location.hash = '#/' + r; },
+    css: function (t) { var s = document.createElement('style'); s.textContent = t; shadow.appendChild(s); },
+    onDestroy: function (f) { cleanups.push(f); }
+  };
+  var destroy = function () {
+    cleanups.splice(0).forEach(function (f) { try { f(); } catch (e) {} });
+    host.remove();
+  };
+  try {
+    var code = await loadCode(m);
+    var fn = new Function('ctx', '"use strict";return (async()=>{' + code + '\n})();');
+    await fn(ctx);
+    return { host: host, destroy: destroy, error: null };
+  } catch (e) {
+    console.error('[module ' + m.id + ']', e);
+    destroy();
+    return { host: null, destroy: function () {}, error: e };
+  }
+}
+
+/* ---------- page modules ---------- */
+function unmountPage() {
+  if (current.destroy) { try { current.destroy(); } catch (e) {} }
+  current.destroy = null; current.key = null; mountToken++;
+}
+async function renderRoute() {
+  if (MODS === null) return;
+  var r = routeNow(), view = $('#view');
+  var list = pages(), m = list.filter(function (x) { return routeOf(x) === r; })[0];
+  renderNav();
+  document.title = brandText();
+  if (!m) {
+    unmountPage();
+    if (!Object.keys(MODS).length) {
+      view.innerHTML = stateHTML('fa-fire', 'This site is not set up yet', 'Open admin.html, go to Modules and tap "Install or update starters".');
+    } else if (r === 'home') {
+      view.innerHTML = stateHTML('fa-house', 'The home page is turned off', 'Turn on the Home module in the control panel.');
+    } else {
+      view.innerHTML = stateHTML('fa-compass', 'Page not found', 'There is no page at this address.', '<a class="btn" href="#/home">Go home</a>');
+    }
+    current.route = r; return;
+  }
+  var key = m.id + '|' + fp(m) + '|' + (m.usesNav ? JSON.stringify(navData()) : '');
+  if (key === current.key) return;
+  var routeChanged = r !== current.route;
+  unmountPage(); current.key = key; current.route = r;
+  var token = mountToken;
+  if (routeChanged) { view.innerHTML = '<div class="sk sk1"></div><div class="sk sk2"></div>'; window.scrollTo(0, 0); }
+  var res = await mountModule(m);
+  if (token !== mountToken) { res.destroy(); return; }
+  document.title = (m.title ? m.title + ' - ' : '') + brandText();
+  if (res.error) {
+    view.innerHTML = stateHTML('fa-triangle-exclamation', 'This section is not opening right now', 'The rest of the site is working. Try again in a little while.', '<a class="btn" href="#/home">Go home</a>');
+    return;
+  }
+  current.destroy = res.destroy;
+  view.replaceChildren(res.host);
+  if (routeChanged) { view.classList.remove('enter'); void view.offsetWidth; view.classList.add('enter'); }
+}
+
+/* ---------- background (global) modules: theme, style, effects, music ---------- */
+function syncGlobals() {
+  var want = {};
+  if (!SAFE) {
+    Object.keys(MODS || {}).forEach(function (id) {
+      var m = MODS[id]; m.id = id;
+      if (m.enabled !== false && m.type === 'global') want[id] = m;
+    });
+  }
+  Object.keys(globals).forEach(function (id) {
+    if (!want[id] || globals[id].key !== fp(want[id])) { globals[id].destroy(); delete globals[id]; }
+  });
+  Object.keys(want).forEach(function (id) {
+    if (globals[id]) return;
+    var m = want[id], key = fp(m);
+    globals[id] = { key: key, destroy: function () {} };
+    mountModule(m).then(function (res) {
+      if (!globals[id] || globals[id].key !== key) { res.destroy(); return; }
+      if (res.error) { console.warn('[global module ' + id + '] skipped'); return; }
+      $('#globalLayer').appendChild(res.host);
+      globals[id].destroy = res.destroy;
+    });
+  });
+  // no theme or style module running: fall back to the built-in default look
+  var themeOn = !SAFE && MODS.theme && MODS.theme.enabled !== false && MODS.theme.type === 'global';
+  var styleOn = !SAFE && MODS.style && MODS.style.enabled !== false && MODS.style.type === 'global';
+  if (!themeOn && (THEME.brand !== undefined || THEME.vars || THEME.mode || THEME.toggle !== undefined)) resetTheme();
+  if (!styleOn) resetStyle();
+}
+
+/* ================= LIVE DATA ================= */
+function failed(err) {
+  console.error(err);
+  var denied = err && (err.code === 'PERMISSION_DENIED' || /permission/i.test(String(err.message)));
+  $('#view').innerHTML = stateHTML('fa-plug-circle-xmark', denied ? 'No permission to read the database' : 'Could not load data',
+    denied ? 'Check that the "site" node has public read access in the Firebase rules.' : 'Check your internet connection and reload the page.');
+}
+db.ref('site/modules').on('value', function (s) {
+  MODS = s.val() || {};
+  renderNav(); syncGlobals(); renderRoute();
+}, failed);
+window.addEventListener('hashchange', function () { $('#sheet').hidden = true; renderRoute(); });
+setTimeout(function () { if (MODS === null) failed(new Error('timeout')); }, 15000);
+})();
+</script>
+</body>
+</html>
