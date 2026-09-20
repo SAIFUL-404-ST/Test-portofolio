@@ -185,7 +185,7 @@ var current = { key: null, destroy: null, route: null };
 var mountToken = 0;
 
 function routeOf(m) { return String(m.route || m.id); }
-function fp(m) { return JSON.stringify([m.version, m.updatedAt, m.enabled, m.source, m.file, m.route, m.title, m.icon, m.settings]); }
+function fp(m) { return JSON.stringify([m.version, m.updatedAt, m.enabled, m.source, m.file, m.route, m.title, m.icon, m.shadow, m.settings]); }
 function pages() {
   return Object.keys(MODS || {}).map(function (id) { var m = MODS[id]; m.id = id; return m; })
     .filter(function (m) { return m.enabled !== false && (m.type || 'page') === 'page'; })
@@ -307,9 +307,16 @@ async function mountModule(m) {
   var host = document.createElement('div');
   host.className = 'mod';
   host.setAttribute('data-mod', m.id);
-  var shadow = host.attachShadow({ mode: 'open' });
-  shadow.innerHTML = '<link rel="stylesheet" href="' + FA + '"><style>:host{display:block}*,*::before,*::after{box-sizing:border-box}img{max-width:100%}a{color:inherit;text-decoration:none}button{font:inherit}</style><div id="app"></div>';
-  var app = shadow.getElementById('app'), cleanups = [];
+  var iso = m.shadow !== false;           // shadow:false = plain page DOM, used for old-style plugin hosts (Tools)
+  var shadow = null, app, cleanups = [];
+  if (iso) {
+    shadow = host.attachShadow({ mode: 'open' });
+    shadow.innerHTML = '<link rel="stylesheet" href="' + FA + '"><style>:host{display:block}*,*::before,*::after{box-sizing:border-box}img{max-width:100%}a{color:inherit;text-decoration:none}button{font:inherit}</style><div id="app"></div>';
+    app = shadow.getElementById('app');
+  } else {
+    app = document.createElement('div');
+    host.appendChild(app);
+  }
   var ctx = {
     id: m.id,
     meta: { title: m.title || m.id, route: routeOf(m), icon: m.icon || '' },
@@ -318,7 +325,7 @@ async function mountModule(m) {
     host: host, root: app, db: db, firebase: firebase, site: SITE_API,
     esc: esc, safeUrl: safeUrl, toast: toast,
     navigate: function (r) { location.hash = '#/' + r; },
-    css: function (t) { var s = document.createElement('style'); s.textContent = t; shadow.appendChild(s); },
+    css: function (t) { var s = document.createElement('style'); s.textContent = t; (iso ? shadow : host).appendChild(s); },
     onDestroy: function (f) { cleanups.push(f); }
   };
   var destroy = function () {
