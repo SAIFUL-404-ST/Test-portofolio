@@ -1,0 +1,16 @@
+{
+  "plugins": [
+    "downloader.js",
+    "weather.js",
+    "lyrics.js",
+    "currency.js",
+    "qrcode.js",
+    "texttools.js",
+    "agecalc.js",
+    "dictionary.js",
+    "imageenhancer.js",
+    "fbinfo.js",
+    "saif-tv.js",
+    "saif-tsports.js"
+  ]
+}
