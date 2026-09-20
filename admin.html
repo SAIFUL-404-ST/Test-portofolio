@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0c0b0a">
+<title>Control panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+<style>
+:root{--gold:#ffd700;--fire1:#ff6600;--fire2:#ff9900;--bg:#0c0b0a;--surface:#151312;--surface2:#1e1b19;--text:#f4f1ec;--muted:rgba(244,241,236,.6);--line:rgba(255,215,0,.16);--ok:#2ecc71;--bad:#ff5a6e;--font:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;line-height:1.5;
+  background-image:radial-gradient(900px 420px at 0% -10%,rgba(255,102,0,.09),transparent 60%);background-attachment:fixed}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--gold);text-decoration:none}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+input,select,textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font:inherit;font-size:16px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
+input[type=color]{padding:4px;height:46px;cursor:pointer}
+input[type=checkbox]{width:20px;height:20px;padding:0;accent-color:var(--fire2)}
+textarea.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.55;white-space:pre;overflow:auto;tab-size:2;min-height:320px}
+
+/* login */
+.login{min-height:100vh;display:grid;place-items:center;padding:20px}
+.login-card{width:100%;max-width:400px;padding:30px 26px;border-radius:26px;background:var(--surface);border:1px solid var(--line)}
+.login-card h1{font-size:1.5rem;font-weight:800;margin-bottom:6px}
+.login-card p{color:var(--muted);margin-bottom:20px}
+.err{color:var(--bad);font-size:.9rem;min-height:1.4em;margin:6px 0 4px}
+
+/* shell */
+.bar{position:sticky;top:0;z-index:10;background:rgba(12,11,10,.9);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.bar-in{max-width:780px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:12px}
+.logo{font-weight:800;font-size:1.05rem;background:linear-gradient(90deg,var(--fire1),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.grow{flex:1}
+.wrap{max-width:780px;margin:0 auto;padding:0 16px 90px}
+.tabs{display:flex;gap:8px;padding:16px 0 8px;overflow-x:auto}
+.tabs button,.subtabs button{padding:10px 18px;border-radius:12px;border:1px solid var(--line);background:transparent;color:var(--muted);font-weight:600;white-space:nowrap}
+.tabs button.on,.subtabs button.on{background:linear-gradient(135deg,var(--fire1),var(--fire2));border-color:transparent;color:#160800}
+.subtabs{display:flex;gap:8px;margin:14px 0 18px;overflow-x:auto}
+h2.title{font-size:1.2rem;font-weight:800;margin:18px 0 12px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 18px}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:13px;border:0;background:linear-gradient(135deg,var(--fire1),var(--fire2));color:#160800;font-weight:700}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+.btn.danger{background:transparent;border:1px solid rgba(255,90,110,.5);color:var(--bad)}
+.btn.sm{padding:8px 14px;font-size:.88rem;border-radius:11px}
+.btn:disabled{opacity:.35;cursor:default}
+.btn.block{width:100%}
+
+/* cards & list */
+.mod{padding:16px;border-radius:20px;background:var(--surface);border:1px solid var(--line);margin-bottom:12px}
+.mod.off{opacity:.62}
+.mod-top{display:flex;align-items:center;gap:14px}
+.ic{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:rgba(255,153,0,.13);color:var(--gold);font-size:1.05rem}
+.mod-info{min-width:0;flex:1}
+.mod-info b{display:block;font-size:1.02rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mod-info small{color:var(--muted)}
+.tag{display:inline-block;padding:2px 9px;border-radius:99px;border:1px solid var(--line);font-size:.72rem;color:var(--muted);margin-left:6px}
+.mod-actions{display:flex;align-items:center;gap:8px;margin-top:14px;flex-wrap:wrap}
+.chk{display:flex;align-items:center;gap:10px;color:var(--text);cursor:pointer;padding:6px 0}
+.chk.sm{font-size:.88rem;color:var(--muted)}
+.sw{position:relative;display:inline-block;width:52px;height:30px;flex:none}
+.sw input{position:absolute;opacity:0;width:100%;height:100%;cursor:pointer;z-index:1;margin:0}
+.sw span{position:absolute;inset:0;border-radius:99px;background:var(--surface2);border:1px solid var(--line);transition:background .2s}
+.sw span::after{content:'';position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#8a8580;transition:transform .2s,background .2s}
+.sw input:checked+span{background:rgba(255,153,0,.28)}
+.sw input:checked+span::after{transform:translateX(22px);background:var(--fire2)}
+.empty{text-align:center;padding:40px 20px;border-radius:22px;border:1px dashed var(--line);color:var(--muted)}
+.empty i{font-size:1.8rem;color:var(--gold);margin-bottom:10px}
+.empty h3{color:var(--text);margin-bottom:6px}
+.panel{padding:20px;border-radius:22px;background:var(--surface);border:1px solid var(--line);margin-bottom:16px}
+.note{padding:14px 16px;border-radius:14px;background:rgba(255,215,0,.06);border:1px solid var(--line);color:var(--muted);margin-bottom:14px;line-height:1.6}
+.note.bad{border-color:rgba(255,90,110,.5);color:var(--bad)}
+.note.ok{border-color:rgba(46,204,113,.5);color:var(--ok)}
+.fg{margin-bottom:16px}
+.fg>label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:6px}
+.hint{font-size:.78rem;color:var(--muted);margin-top:5px}
+.row-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.ed-head{display:flex;align-items:center;gap:14px;margin-top:18px}
+.ed-head h2{font-size:1.2rem;font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hist{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:var(--surface);border:1px solid var(--line);margin-bottom:10px}
+.hist div{flex:1}.hist small{display:block;color:var(--muted)}
+details{margin-top:22px}summary{cursor:pointer;color:var(--gold);font-weight:600;padding:8px 0}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:100;max-width:min(92vw,440px);padding:13px 20px;border-radius:14px;background:var(--surface2);border:1px solid var(--line);box-shadow:0 12px 40px rgba(0,0,0,.5);font-size:.92rem}
+.toast.bad{border-color:rgba(255,90,110,.6)}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div class="login" id="login" hidden>
+  <form class="login-card" id="loginForm" autocomplete="on">
+    <h1>Control panel</h1>
+    <p>Admins only. Sign in with your email and password.</p>
+    <div class="fg"><label for="em">Email</label><input id="em" type="email" autocomplete="username" required></div>
+    <div class="fg"><label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required></div>
+    <div class="err" id="loginErr" role="alert"></div>
+    <button class="btn block" id="loginBtn" type="submit">Sign in</button>
+  </form>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="app" hidden>
+  <header class="bar"><div class="bar-in">
+    <span class="logo">Control panel</span><span class="grow"></span>
+    <a href="index.html" target="_blank" rel="noopener" class="btn ghost sm"><i class="fas fa-arrow-up-right-from-square"></i> Open site</a>
+    <button class="btn ghost sm" id="logout" type="button">Sign out</button>
+  </div></header>
+
+  <div class="wrap">
+    <nav class="tabs" id="mainTabs">
+      <button data-tab="modules" class="on" type="button">Modules</button>
+      <button data-tab="backup" type="button">Backup</button>
+    </nav>
+
+    <section id="tab-modules">
+      <div class="toolbar">
+        <button class="btn" id="newMod" type="button"><i class="fas fa-plus"></i> New module</button>
+        <button class="btn ghost" id="installStarters" type="button"><i class="fas fa-wand-magic-sparkles"></i> Install or update starters</button>
+      </div>
+      <div id="modList"></div>
+    </section>
+
+    <section id="tab-backup" hidden></section>
+    <section id="editor" hidden></section>
+  </div>
+</div>
+
+<!-- ============ STARTER MODULES (their code is shown in each module's Code tab after install) ============ -->
+<script>
+var STARTER_FNS = {
+
+home: function (ctx) {
+  const s = ctx.settings, e = ctx.esc, u = ctx.safeUrl;
+  const name = s.name || 'Your name';
+  const rows = [
+    ['fa-user-tag', 'Nickname', s.nickname],
+    ['fa-cake-candles', 'Birthday', s.birthday],
+    ['fa-briefcase', 'Status', s.status],
+    ['fa-code', 'Skills', s.skills],
+    ['fa-house', 'Home town', s.hometown],
+    ['fa-location-dot', 'Lives in', s.current]
+  ].filter(function (r) { return r[2]; });
+  const wa = String(s.wa || '').replace(/\D/g, '');
+  const links = [];
+  if (s.fb) links.push(['fab fa-facebook-f', 'Facebook', u(s.fb), '#1877f2', true]);
+  if (wa) links.push(['fab fa-whatsapp', 'WhatsApp', 'https://wa.me/' + wa, '#1fa855', true]);
+  if (s.ig) links.push(['fab fa-instagram', 'Instagram', u(s.ig), '#d6336c', true]);
+  if (s.email) links.push(['fas fa-envelope', 'Email', 'mailto:' + s.email, '#d93025', false]);
+  const go = ctx.nav.filter(function (n) { return n.route !== 'home'; });
+
+  ctx.css(`
+    .hero{position:relative;border-radius:var(--r3);overflow:hidden;background:var(--surface);border:1px solid var(--line)}
+    .cover{position:relative;height:172px;background:linear-gradient(135deg,#3a1300,#120a04)}
+    .cover img{width:100%;height:100%;object-fit:cover;display:block;filter:brightness(.8) saturate(1.15)}
+    .cover::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(255,90,0,.10),var(--surface))}
+    .who{position:relative;display:flex;gap:28px;align-items:flex-end;padding:0 32px 32px;margin-top:-66px}
+    .ring{position:relative;flex:none;width:132px;height:132px;isolation:isolate}
+    .rg{position:absolute;inset:-7px;border-radius:50%;z-index:0;background:conic-gradient(#ff2200,#ff6600,#ffaa00,#ffdd00,#ffaa00,#ff6600,#ff2200);filter:blur(2px);animation:spin 5s linear infinite}
+    .ring::before{content:'';position:absolute;inset:-3px;border-radius:50%;background:var(--surface);z-index:1}
+    .ring::after{content:'';position:absolute;inset:-38px;border-radius:50%;z-index:-1;background:radial-gradient(circle,rgba(255,102,0,.34),transparent 66%);animation:glow 2.8s ease-in-out infinite alternate}
+    .av{position:relative;z-index:2;width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+    .noav{display:grid;place-items:center;background:var(--surface2);color:var(--gold);font-size:2.4rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes glow{from{opacity:.5;transform:scale(.94)}to{opacity:1;transform:scale(1.06)}}
+    h1{font-family:var(--display);font-weight:800;font-size:clamp(1.6rem,4.6vw,2.5rem);line-height:1.1;letter-spacing:-.01em;overflow-wrap:anywhere;background:linear-gradient(90deg,var(--fire1),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+    .badge{display:inline-block;margin-top:12px;padding:6px 14px;border-radius:99px;border:1px solid var(--line);font-size:.84rem;font-weight:600}
+    .quote{margin-top:12px;color:var(--muted);font-size:.96rem;line-height:1.65;max-width:52ch;font-style:italic}
+    .sec{margin-top:42px}
+    h2{font-family:var(--display);font-size:1.15rem;font-weight:700;color:var(--gold);margin-bottom:14px}
+    .about{display:grid;grid-template-columns:repeat(2,1fr);gap:0 40px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r2);padding:4px 26px}
+    .row{display:flex;align-items:center;gap:14px;padding:15px 0;border-bottom:1px solid var(--line)}
+    .row:nth-last-child(-n+2){border-bottom:0}
+    .row>i{flex:none;width:36px;height:36px;border-radius:var(--r1);display:grid;place-items:center;background:rgba(255,153,0,.13);color:var(--gold);font-size:.85rem}
+    .row small{display:block;color:var(--muted);font-size:.76rem;margin-bottom:1px}
+    .row b{font-weight:600;font-size:.95rem;overflow-wrap:anywhere}
+    .go-list{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+    .go{display:flex;align-items:center;gap:16px;padding:18px;border-radius:var(--r2);background:var(--surface);border:1px solid var(--line);transition:border-color .2s,transform .2s}
+    .go:hover{border-color:var(--gold);transform:translateY(-2px)}
+    .go .ic{flex:none;width:48px;height:48px;border-radius:var(--r1);display:grid;place-items:center;font-size:1.2rem;background:linear-gradient(135deg,var(--fire1),var(--fire2));color:#160800}
+    .go b{display:block;font-weight:700}
+    .go .d{display:block;color:var(--muted);font-size:.85rem;margin-top:2px}
+    .go .ch{margin-left:auto;color:var(--muted);font-size:.85rem}
+    .mk{display:flex;gap:22px;align-items:center;padding:24px;border-radius:var(--r3);background:linear-gradient(135deg,rgba(255,153,0,.11),rgba(255,102,0,.04));border:1px solid var(--line)}
+    .mk img{flex:none;width:76px;height:76px;border-radius:50%;object-fit:cover;border:2px solid var(--gold)}
+    .mk h3{font-size:1.05rem;margin-bottom:6px}
+    .mk p{color:var(--muted);line-height:1.65;font-size:.92rem}
+    .mkbtn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:10px 18px;border-radius:var(--r1);background:linear-gradient(135deg,var(--fire1),var(--fire2));color:#160800;font-weight:700;font-size:.9rem}
+    .links{display:flex;flex-wrap:wrap;gap:10px}
+    .lk{display:inline-flex;align-items:center;gap:10px;padding:10px 20px 10px 10px;border-radius:99px;background:var(--surface);border:1px solid var(--line);font-weight:600;font-size:.92rem;transition:border-color .2s}
+    .lk:hover{border-color:var(--gold)}
+    .lk i{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:.88rem}
+    @media(max-width:640px){
+      .who{flex-direction:column;align-items:center;text-align:center;padding:0 20px 28px}
+      .about,.go-list{grid-template-columns:1fr}
+      .row:nth-last-child(2){border-bottom:1px solid var(--line)}
+      .mk{flex-direction:column;text-align:center;padding:22px 18px}
+    }
+  `);
+
+  ctx.root.innerHTML = `
+    <section class="hero">
+      <div class="cover">${s.cover ? `<img src="${e(u(s.cover))}" alt="">` : ''}</div>
+      <div class="who">
+        <div class="ring"><span class="rg"></span>${s.avatar ? `<img class="av" src="${e(u(s.avatar))}" alt="">` : `<div class="av noav"><i class="fas fa-user"></i></div>`}</div>
+        <div class="txt">
+          <h1>${e(name)}</h1>
+          ${s.badge ? `<p class="badge">${e(s.badge)}</p>` : ''}
+          ${s.quote ? `<p class="quote">${e(s.quote)}</p>` : ''}
+        </div>
+      </div>
+    </section>
+    ${rows.length ? `<section class="sec"><h2>About</h2><div class="about">${rows.map(function (r) { return `<div class="row"><i class="fas ${r[0]}"></i><div><small>${r[1]}</small><b>${e(r[2])}</b></div></div>`; }).join('')}</div></section>` : ''}
+    ${go.length ? `<section class="sec"><h2>Explore</h2><div class="go-list">${go.map(function (n) { return `<a class="go" href="#/${e(n.route)}"><span class="ic"><i class="${e(n.icon)}"></i></span><span><b>${e(n.title)}</b>${n.desc ? `<span class="d">${e(n.desc)}</span>` : ''}</span><i class="fas fa-chevron-right ch"></i></a>`; }).join('')}</div></section>` : ''}
+    ${s.mikasaText ? `<section class="sec"><div class="mk">${s.mikasaImage ? `<img src="${e(u(s.mikasaImage))}" alt="">` : ''}<div><h3>${e(s.mikasaTitle || 'Mikasa')}</h3><p>${e(s.mikasaText)}</p>${s.mikasaLink ? `<a class="mkbtn" href="${e(u(s.mikasaLink))}" target="_blank" rel="noopener"><i class="fab fa-facebook-messenger"></i> ${e(s.mikasaButton || 'Join')}</a>` : ''}</div></div></section>` : ''}
+    ${links.length ? `<section class="sec"><h2>Find me</h2><div class="links">${links.map(function (l) { return `<a class="lk" href="${e(l[2])}"${l[4] ? ' target="_blank" rel="noopener"' : ''}><i class="${l[0]}" style="background:${l[3]}"></i>${l[1]}</a>`; }).join('')}</div></section>` : ''}
+  `;
+},
+
+theme: function (ctx) {
+  // Colors, site name and light/dark mode. Turn this module off and the site goes back to the built-in look.
+  const s = ctx.settings;
+  ctx.site.setTheme({
+    brand: s.brand,
+    mode: s.mode,
+    toggle: s.toggle !== false,
+    vars: { gold: s.gold, fire1: s.fire1, fire2: s.fire2, bg: s.bg, surface: s.surface, text: s.text }
+  });
+  ctx.onDestroy(function () { ctx.site.resetTheme(); });
+},
+
+style: function (ctx) {
+  // Fonts, corner roundness and content width. Turn this module off and the site goes back to the built-in style.
+  const s = ctx.settings;
+  ctx.site.setStyle({ bodyFont: s.bodyFont, displayFont: s.displayFont, roundness: s.roundness, width: s.width });
+  ctx.onDestroy(function () { ctx.site.resetStyle(); });
+},
+
+effects: function (ctx) {
+  const s = ctx.settings;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  ctx.host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:0';
+  const cv = document.createElement('canvas');
+  cv.style.cssText = 'width:100%;height:100%;display:block';
+  ctx.root.appendChild(cv);
+  const g = cv.getContext('2d');
+  if (!g) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+  let W = 0, H = 0;
+  const size = function () {
+    W = innerWidth; H = innerHeight;
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  size();
+  addEventListener('resize', size);
+  ctx.onDestroy(function () { removeEventListener('resize', size); });
+
+  const low = (navigator.hardwareConcurrency || 4) <= 4;
+  const k = Math.max(0, Math.min(100, s.density == null ? 60 : +s.density)) / 100 * (low ? 0.55 : 1);
+  const nRain = s.rain === false ? 0 : Math.round(110 * k);
+  const nSpark = s.sparks === false ? 0 : Math.round(34 * k);
+  const cols = ['255,80,0', '255,120,0', '255,170,0', '255,210,40'];
+  const newDrop = function (init) { return { x: Math.random() * W, y: init ? Math.random() * H : -20, l: 8 + Math.random() * 16, v: 3 + Math.random() * 4, a: 0.08 + Math.random() * 0.16 }; };
+  const newSpark = function (init) { return { x: Math.random() * W, y: init ? Math.random() * H : H + 10, r: 1 + Math.random() * 2.4, v: 0.4 + Math.random() * 1.1, d: (Math.random() - 0.5) * 0.5, life: 0, max: 180 + Math.random() * 220, c: cols[(Math.random() * cols.length) | 0] }; };
+  const rain = [], sparks = [];
+  for (let i = 0; i < nRain; i++) rain.push(newDrop(true));
+  for (let i = 0; i < nSpark; i++) sparks.push(newSpark(true));
+
+  let raf = 0, last = 0;
+  const frame = function (t) {
+    raf = requestAnimationFrame(frame);
+    if (t - last < 33) return;
+    last = t;
+    g.clearRect(0, 0, W, H);
+    const light = document.documentElement.dataset.theme === 'light';
+    g.lineWidth = 1.1;
+    for (let i = 0; i < rain.length; i++) {
+      const d = rain[i];
+      g.strokeStyle = light ? 'rgba(160,90,0,' + d.a + ')' : 'rgba(255,180,0,' + (d.a * 0.7) + ')';
+      g.beginPath(); g.moveTo(d.x, d.y); g.lineTo(d.x - 1.5, d.y + d.l); g.stroke();
+      d.y += d.v * 2; d.x -= 0.5;
+      if (d.y > H) Object.assign(d, newDrop(false));
+    }
+    for (let i = 0; i < sparks.length; i++) {
+      const p = sparks[i];
+      p.life++; p.y -= p.v * 2; p.x += p.d + Math.sin(p.life / 25) * 0.3;
+      const f = p.life / p.max;
+      const al = f < 0.15 ? f / 0.15 : 1 - f;
+      g.fillStyle = 'rgba(' + p.c + ',' + (Math.max(0, al) * 0.55) + ')';
+      g.beginPath(); g.arc(p.x, p.y, p.r, 0, 6.283); g.fill();
+      if (p.life >= p.max || p.y < -10) Object.assign(p, newSpark(false));
+    }
+  };
+  raf = requestAnimationFrame(frame);
+  const vis = function () { if (document.hidden) cancelAnimationFrame(raf); else raf = requestAnimationFrame(frame); };
+  document.addEventListener('visibilitychange', vis);
+  ctx.onDestroy(function () { cancelAnimationFrame(raf); document.removeEventListener('visibilitychange', vis); });
+},
+
+music: function (ctx) {
+  const s = ctx.settings;
+  if (!s.url) return;
+  ctx.host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:60';
+  ctx.css(`
+    .b{position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom));pointer-events:auto;width:46px;height:46px;border-radius:50%;border:1.5px solid rgba(255,215,0,.35);background:rgba(18,17,16,.82);backdrop-filter:blur(12px);color:var(--gold);font-size:1rem;cursor:pointer;display:grid;place-items:center;transition:transform .2s,border-color .2s}
+    .b:hover{transform:scale(1.08);border-color:var(--gold)}
+    .b.on{border-color:var(--gold);box-shadow:0 0 18px rgba(255,153,0,.35)}
+    @media(min-width:900px){.b{bottom:24px;right:24px}}
+  `);
+  const a = new Audio();
+  a.loop = true; a.preload = 'none'; a.src = ctx.safeUrl(s.url);
+  a.volume = Math.max(0, Math.min(1, (s.volume == null ? 30 : +s.volume) / 100));
+  const b = document.createElement('button');
+  b.className = 'b'; b.type = 'button'; b.setAttribute('aria-label', 'Background music');
+  const paint = function () {
+    b.innerHTML = '<i class="fas ' + (a.paused ? 'fa-volume-xmark' : 'fa-volume-high') + '"></i>';
+    b.classList.toggle('on', !a.paused);
+  };
+  b.onclick = function () {
+    if (a.paused) a.play().then(paint).catch(function () { ctx.toast('Could not play the audio. Check that the link is correct.'); paint(); });
+    else { a.pause(); paint(); }
+  };
+  paint();
+  ctx.root.appendChild(b);
+  ctx.onDestroy(function () { a.pause(); a.removeAttribute('src'); a.load(); });
+}
+
+};
+
+function fnBody(fn) {
+  var s = fn.toString();
+  s = s.slice(s.indexOf('{') + 1, s.lastIndexOf('}')).replace(/^\s*\n/, '').replace(/\s+$/, '');
+  var lines = s.split('\n'), min = 1e9;
+  lines.forEach(function (l) { if (l.trim()) min = Math.min(min, l.match(/^ */)[0].length); });
+  if (min === 1e9) min = 0;
+  return lines.map(function (l) { return l.slice(min); }).join('\n') + '\n';
+}
+
+var FONT_OPTIONS = ['Outfit', 'Inter', 'Poppins', 'Montserrat', 'DM Sans', 'Manrope', 'Syne', 'Playfair Display', 'system'];
+
+var STARTERS = {
+  home: {
+    meta: { title: 'Home', route: 'home', icon: 'fa-house', type: 'page', order: 1, inNav: true, usesNav: true, desc: 'Profile and a shortcut to every page' },
+    schema: [
+      { key: 'name', label: 'Name', type: 'text' },
+      { key: 'badge', label: 'Title under the name', type: 'text' },
+      { key: 'quote', label: 'Quote', type: 'textarea' },
+      { key: 'cover', label: 'Cover image link', type: 'url' },
+      { key: 'avatar', label: 'Profile photo link', type: 'url' },
+      { key: 'nickname', label: 'Nickname', type: 'text' },
+      { key: 'birthday', label: 'Birthday', type: 'text' },
+      { key: 'status', label: 'Status', type: 'text' },
+      { key: 'skills', label: 'Skills', type: 'text' },
+      { key: 'hometown', label: 'Home town', type: 'text' },
+      { key: 'current', label: 'Lives in', type: 'text' },
+      { key: 'fb', label: 'Facebook link', type: 'url' },
+      { key: 'wa', label: 'WhatsApp number (with country code)', type: 'text' },
+      { key: 'ig', label: 'Instagram link', type: 'url' },
+      { key: 'email', label: 'Email', type: 'text' },
+      { key: 'mikasaTitle', label: 'Bot card: title', type: 'text' },
+      { key: 'mikasaText', label: 'Bot card: text', type: 'textarea' },
+      { key: 'mikasaImage', label: 'Bot card: image link', type: 'url' },
+      { key: 'mikasaLink', label: 'Bot card: button link', type: 'url' },
+      { key: 'mikasaButton', label: 'Bot card: button text', type: 'text' }
+    ],
+    settings: {
+      name: 'MOHAMMAD SAIFUL ISLAM',
+      badge: 'Honours 2nd Year (Management)',
+      quote: 'Focus on your career, let the success make the noise.',
+      cover: 'https://i.imgur.com/zq5JFC5.jpeg',
+      avatar: 'https://i.imgur.com/58L6IZM.jpeg',
+      nickname: 'Saif', birthday: '25 January', status: 'Study + Job', skills: 'Bot & Web Hosting',
+      hometown: 'Gaibandha Sadar', current: 'Gazipur, Dhaka',
+      fb: 'https://www.facebook.com/saiful.404.st', wa: '8801823772045',
+      ig: 'https://www.instagram.com/saiful_404_st', email: 'saifmorse04@gmail.com',
+      mikasaTitle: 'Mikasa Baby',
+      mikasaText: 'Mikasa Bot is everyone\'s favorite Messenger GOAT bot. Multi-functional with elite commands, she ensures a top-tier experience with a strict "No 18+" command. Loyalty defines her existence.',
+      mikasaImage: 'https://i.imgur.com/igiRnE0.jpeg',
+      mikasaLink: 'https://m.me/j/AbYhrDx5QWRQ54or/',
+      mikasaButton: 'Join Mikasa world'
+    },
+    fn: 'home'
+  },
+  theme: {
+    meta: { title: 'Theme', route: 'theme', icon: 'fa-palette', type: 'global', order: 80, inNav: false, desc: 'Colors, site name and light or dark mode' },
+    schema: [
+      { key: 'brand', label: 'Site name in the menu', type: 'text' },
+      { key: 'mode', label: 'Default mode', type: 'select', options: ['dark', 'light', 'auto'] },
+      { key: 'toggle', label: 'Let visitors switch between light and dark', type: 'toggle' },
+      { key: 'gold', label: 'Accent gold', type: 'color' },
+      { key: 'fire1', label: 'Fire color (deep)', type: 'color' },
+      { key: 'fire2', label: 'Fire color (light)', type: 'color' },
+      { key: 'bg', label: 'Background (dark mode)', type: 'color' },
+      { key: 'surface', label: 'Cards (dark mode)', type: 'color' },
+      { key: 'text', label: 'Text (dark mode)', type: 'color' }
+    ],
+    settings: { brand: 'SAIF ELITE', mode: 'dark', toggle: true, gold: '#ffd700', fire1: '#ff6600', fire2: '#ff9900', bg: '#080808', surface: '#121110', text: '#f4f1ec' },
+    fn: 'theme'
+  },
+  style: {
+    meta: { title: 'Style', route: 'style', icon: 'fa-swatchbook', type: 'global', order: 81, inNav: false, desc: 'Fonts, corner roundness and page width' },
+    schema: [
+      { key: 'bodyFont', label: 'Body font', type: 'select', options: FONT_OPTIONS },
+      { key: 'displayFont', label: 'Heading font', type: 'select', options: FONT_OPTIONS },
+      { key: 'roundness', label: 'Corner roundness', type: 'select', options: ['sharp', 'soft', 'round'] },
+      { key: 'width', label: 'Page width', type: 'select', options: ['narrow', 'normal', 'wide'] }
+    ],
+    settings: { bodyFont: 'Outfit', displayFont: 'Syne', roundness: 'soft', width: 'normal' },
+    fn: 'style'
+  },
+  effects: {
+    meta: { title: 'Effects', route: 'effects', icon: 'fa-fire', type: 'global', order: 90, inNav: false, desc: 'Rain and fire sparks in the background' },
+    schema: [
+      { key: 'rain', label: 'Rain', type: 'toggle' },
+      { key: 'sparks', label: 'Fire sparks', type: 'toggle' },
+      { key: 'density', label: 'Amount (0 to 100)', type: 'number' }
+    ],
+    settings: { rain: true, sparks: true, density: 60 },
+    fn: 'effects'
+  },
+  music: {
+    meta: { title: 'Music', route: 'music', icon: 'fa-music', type: 'global', order: 91, inNav: false, desc: 'Background music with a play button' },
+    schema: [
+      { key: 'url', label: 'Audio link (mp3, ogg, opus)', type: 'url' },
+      { key: 'volume', label: 'Volume (0 to 100)', type: 'number' }
+    ],
+    settings: { url: 'https://files.catbox.moe/oplblr.opus', volume: 30 },
+    fn: 'music'
+  }
+};
+</script>
+
+<!-- ============ PANEL LOGIC ============ -->
+<script>
+(function () {
+'use strict';
+
+var firebaseConfig = {
+  apiKey: "AIzaSyC3Kk8wYdOSvu3eZYLwH4-ebI77Q9dwmOY",
+  authDomain: "saif-elite.firebaseapp.com",
+  databaseURL: "https://saif-elite-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "saif-elite",
+  storageBucket: "saif-elite.firebasestorage.app",
+  messagingSenderId: "542024397008",
+  appId: "1:542024397008:web:71f8bba53c2eec701d6ed5",
+  measurementId: "G-N2BN7X7MJT"
+};
+// UX only: the real lock is the Firebase Rules (only this UID can write "site/").
+var ADMIN_UID = '7kFOXfV5jnV14B3nd6n6Z2Eavt93';
+
+var NEW_CODE = [
+  "// New module: put HTML into ctx.root and style it with ctx.css",
+  "ctx.css('.box{padding:24px;border-radius:var(--r2);background:var(--surface);border:1px solid var(--line)}');",
+  "ctx.root.innerHTML = '<div class=\"box\"><h2>' + ctx.esc(ctx.meta.title) + '</h2><p>Write your code here.</p></div>';"
+].join('\n');
+
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function iconClass(i) { i = String(i || 'fa-cube').trim(); if (/\s/.test(i)) return i; if (i.indexOf('fa-') !== 0) i = 'fa-' + i; return 'fas ' + i; }
+function slug(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, ''); }
+
+firebase.initializeApp(firebaseConfig);
+var auth = firebase.auth(), db = firebase.database(), TS = firebase.database.ServerValue.TIMESTAMP;
+var SITE = db.ref('site');
+
+var MODS = {}, editId = null, isNew = false, editTab = 'basic', DRAFT = {}, HIST = {}, listening = false;
+
+/* ---------- small UI helpers ---------- */
+var toastTimer;
+function toast(msg, bad) {
+  var t = $('.toast');
+  if (!t) { t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+  t.className = 'toast' + (bad ? ' bad' : ''); t.textContent = msg; t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(function () { t.hidden = true; }, 4200);
+}
+function fail(e) {
+  console.error(e);
+  var denied = e && (e.code === 'PERMISSION_DENIED' || /permission/i.test(String(e.message)));
+  toast(denied ? 'Permission denied. Make sure you are signed in with the admin account.' : 'That did not work: ' + (e && e.message ? e.message : e), true);
+}
+function ask(msg) { return window.confirm(msg); }
+
+/* ---------- auth ---------- */
+function authMsg(e) {
+  var map = {
+    'auth/invalid-credential': 'Wrong email or password.',
+    'auth/wrong-password': 'Wrong password.',
+    'auth/user-not-found': 'No account with this email.',
+    'auth/invalid-email': 'That email address is not valid.',
+    'auth/too-many-requests': 'Too many attempts. Try again in a little while.',
+    'auth/network-request-failed': 'No internet connection.',
+    'auth/unauthorized-domain': 'This domain is not authorized in Firebase. Add it under Authentication, Settings, Authorized domains.'
+  };
+  return map[e && e.code] || ('Could not sign in: ' + (e && e.message ? e.message : e));
+}
+$('#loginForm').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  var btn = $('#loginBtn'); $('#loginErr').textContent = ''; btn.disabled = true;
+  auth.signInWithEmailAndPassword($('#em').value.trim(), $('#pw').value)
+    .catch(function (e) { $('#loginErr').textContent = authMsg(e); })
+    .then(function () { btn.disabled = false; });
+});
+$('#logout').addEventListener('click', function () { auth.signOut(); });
+auth.onAuthStateChanged(function (u) {
+  if (!u || u.isAnonymous) { $('#app').hidden = true; $('#login').hidden = false; return; }
+  if (u.uid !== ADMIN_UID) {
+    $('#loginErr').textContent = 'This account does not have admin access.';
+    auth.signOut(); return;
+  }
+  $('#login').hidden = true; $('#app').hidden = false; start();
+});
+
+/* ---------- tabs ---------- */
+function showTab(name) {
+  $$('#mainTabs button').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === name); });
+  ['modules', 'backup'].forEach(function (t) { $('#tab-' + t).hidden = t !== name; });
+  $('#editor').hidden = true; $('#mainTabs').hidden = false;
+  if (name === 'backup') renderBackup();
+}
+$('#mainTabs').addEventListener('click', function (e) { var b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
+
+function start() {
+  if (listening) return; listening = true;
+  SITE.child('modules').on('value', function (s) { MODS = s.val() || {}; renderList(); if (editId && !isNew && !MODS[editId]) closeEditor(); }, fail);
+}
+
+/* ================= MODULE LIST ================= */
+function sortedMods() {
+  return Object.keys(MODS).map(function (id) { return Object.assign({ id: id }, MODS[id]); })
+    .sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+}
+function renderList() {
+  var box = $('#modList'), arr = sortedMods();
+  if (!arr.length) {
+    box.innerHTML = '<div class="empty"><i class="fas fa-fire"></i><h3>No modules yet</h3><p>Tap "Install or update starters" to create Home, Theme, Style, Effects and Music.</p></div>';
+    return;
+  }
+  box.innerHTML = arr.map(function (m, i) {
+    var isG = m.type === 'global';
+    return '<article class="mod' + (m.enabled === false ? ' off' : '') + '" data-id="' + esc(m.id) + '">' +
+      '<div class="mod-top"><span class="ic"><i class="' + esc(iconClass(m.icon)) + '"></i></span>' +
+      '<div class="mod-info"><b>' + esc(m.title || m.id) + '</b><small>' + (isG ? 'Runs in the background' : 'Page: #/' + esc(m.route || m.id)) +
+      '</small><span class="tag">' + (isG ? 'background' : 'page') + '</span><span class="tag">' + (m.source === 'file' ? 'file' : 'panel') + '</span></div>' +
+      '<label class="sw" title="Show on site"><input type="checkbox" data-act="enable" aria-label="Enabled"' + (m.enabled !== false ? ' checked' : '') + '><span></span></label></div>' +
+      '<div class="mod-actions">' +
+      '<button class="btn sm ghost" type="button" data-act="up" aria-label="Move up"' + (i === 0 ? ' disabled' : '') + '><i class="fas fa-arrow-up"></i></button>' +
+      '<button class="btn sm ghost" type="button" data-act="down" aria-label="Move down"' + (i === arr.length - 1 ? ' disabled' : '') + '><i class="fas fa-arrow-down"></i></button>' +
+      (isG ? '' : '<label class="chk sm"><input type="checkbox" data-act="nav"' + (m.inNav !== false ? ' checked' : '') + '> In menu</label>') +
+      '<span class="grow"></span><button class="btn sm" type="button" data-act="edit">Edit</button></div></article>';
+  }).join('');
+}
+function updateMod(id, data) {
+  return SITE.child('modules/' + id).update(data).then(function () { toast('Saved'); }).catch(fail);
+}
+function move(id, dir) {
+  var arr = sortedMods(), i = arr.findIndex(function (m) { return m.id === id; }), j = i + dir;
+  if (i < 0 || j < 0 || j >= arr.length) return;
+  var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+  var upd = {}; arr.forEach(function (m, k) { upd['modules/' + m.id + '/order'] = k + 1; });
+  SITE.update(upd).catch(fail);
+}
+$('#modList').addEventListener('change', function (e) {
+  var card = e.target.closest('.mod'); if (!card) return;
+  var id = card.dataset.id, act = e.target.dataset.act;
+  if (act === 'enable') updateMod(id, { enabled: e.target.checked });
+  if (act === 'nav') updateMod(id, { inNav: e.target.checked });
+});
+$('#modList').addEventListener('click', function (e) {
+  var b = e.target.closest('button[data-act]'); if (!b) return;
+  var id = b.closest('.mod').dataset.id, act = b.dataset.act;
+  if (act === 'up') move(id, -1);
+  if (act === 'down') move(id, 1);
+  if (act === 'edit') openEditor(id, false);
+});
+
+$('#installStarters').addEventListener('click', function () {
+  var ids = Object.keys(STARTERS);
+  var missing = ids.filter(function (id) { return !MODS[id]; });
+  var existing = ids.filter(function (id) { return MODS[id] && MODS[id].source !== 'file'; });
+  var msg = (missing.length ? 'Will install: ' + missing.join(', ') + '.\n' : '') +
+    (existing.length ? 'Will refresh the code and settings fields of: ' + existing.join(', ') + '. Your saved settings stay, and the old code goes to History.\n' : '') +
+    'Continue?';
+  if (!ask(msg)) return;
+  var upd = {};
+  missing.forEach(function (id) {
+    var st = STARTERS[id];
+    upd['modules/' + id] = Object.assign({}, st.meta, { enabled: true, source: 'panel', version: 1, updatedAt: TS, schema: st.schema, settings: st.settings });
+    upd['code/' + id] = fnBody(STARTER_FNS[st.fn]);
+  });
+  var done = Object.keys(upd).length ? SITE.update(upd) : Promise.resolve();
+  done.then(function () {
+    return existing.reduce(function (p, id) {
+      return p.then(function () {
+        var st = STARTERS[id], cur = MODS[id] || {};
+        var merged = Object.assign({}, st.settings, cur.settings || {});
+        var u = {};
+        u['modules/' + id + '/schema'] = st.schema; u['modules/' + id + '/desc'] = st.meta.desc; u['modules/' + id + '/settings'] = merged;
+        return SITE.update(u).then(function () { return saveCodeText(id, fnBody(STARTER_FNS[st.fn]), null); });
+      });
+    }, Promise.resolve());
+  }).then(function () { toast('Starter modules are ready. Tap Open site to see them.'); }).catch(fail);
+});
+$('#newMod').addEventListener('click', function () {
+  DRAFT = { title: '', route: '', icon: 'fa-cube', desc: '', type: 'page', source: 'panel', file: '', enabled: false, inNav: true, usesNav: false };
+  openEditor(null, true);
+});
+
+/* ================= EDITOR ================= */
+function openEditor(id, fresh) {
+  editId = id; isNew = !!fresh; editTab = 'basic';
+  $('#tab-modules').hidden = true; $('#mainTabs').hidden = true; $('#editor').hidden = false;
+  renderEditor(); window.scrollTo(0, 0);
+}
+function closeEditor() {
+  editId = null; isNew = false; $('#editor').hidden = true; $('#mainTabs').hidden = false; showTab('modules');
+}
+function curMeta() { return isNew ? DRAFT : Object.assign({ id: editId }, MODS[editId] || {}); }
+
+function renderEditor() {
+  var m = curMeta(), tabs = isNew ? ['basic'] : ['basic', 'settings', 'code', 'history'];
+  var names = { basic: 'Basic', settings: 'Settings', code: 'Code', history: 'History' };
+  $('#editor').innerHTML =
+    '<div class="ed-head"><button class="btn ghost sm" type="button" data-act="back"><i class="fas fa-arrow-left"></i> Back</button><h2>' + esc(m.title || (isNew ? 'New module' : editId)) + '</h2></div>' +
+    '<div class="subtabs">' + tabs.map(function (t) { return '<button type="button" data-st="' + t + '" class="' + (editTab === t ? 'on' : '') + '">' + names[t] + '</button>'; }).join('') + '</div>' +
+    '<div id="edBody"></div>';
+  renderEdBody();
+}
+function renderEdBody() {
+  var body = $('#edBody'), m = curMeta();
+  if (editTab === 'basic') { body.innerHTML = basicHTML(m); syncSource(); }
+  else if (editTab === 'settings') { body.innerHTML = settingsHTML(m); afterSettingsRender(); }
+  else if (editTab === 'code') codeTab(m);
+  else if (editTab === 'history') historyTab();
+}
+
+/* ---- Basic ---- */
+function basicHTML(m) {
+  return '<div class="panel">' +
+    '<div class="fg"><label for="f_title">Name shown on the site</label><input id="f_title" value="' + esc(m.title) + '"></div>' +
+    '<div class="fg"><label for="f_id">Module ID</label><input id="f_id" value="' + esc(isNew ? '' : editId) + '"' + (isNew ? '' : ' disabled') + ' placeholder="tv, chat, weather">' + (isNew ? '<div class="hint">Lowercase letters, numbers, dash and underscore only. It cannot be changed later.</div>' : '') + '</div>' +
+    '<div class="fg"><label for="f_route">Page address</label><input id="f_route" value="' + esc(m.route) + '" placeholder="Leave empty to use the ID"><div class="hint">The page will open at index.html#/<b>address</b></div></div>' +
+    '<div class="fg"><label for="f_icon">Icon</label><input id="f_icon" value="' + esc(m.icon) + '" placeholder="fa-tv"><div class="hint">A Font Awesome name such as fa-tv, fa-comments or fa-cloud-sun.</div></div>' +
+    '<div class="fg"><label for="f_desc">Short description</label><input id="f_desc" value="' + esc(m.desc) + '"></div>' +
+    '<div class="fg"><label for="f_type">Type</label><select id="f_type"><option value="page"' + (m.type !== 'global' ? ' selected' : '') + '>Page (has its own address)</option><option value="global"' + (m.type === 'global' ? ' selected' : '') + '>Background (runs on every page, like music)</option></select></div>' +
+    '<div class="fg"><label for="f_source">Where the code lives</label><select id="f_source"><option value="panel"' + (m.source !== 'file' ? ' selected' : '') + '>Panel (write it in the Code tab)</option><option value="file"' + (m.source === 'file' ? ' selected' : '') + '>File (a .js file on your hosting)</option></select></div>' +
+    '<div class="fg" id="fileRow"><label for="f_file">File path</label><input id="f_file" value="' + esc(m.file) + '" placeholder="saif/tv.js"><div class="hint">Path from the folder that holds index.html. The file must use the same ctx rules as panel code.</div></div>' +
+    '<label class="chk"><input type="checkbox" id="f_enabled"' + (m.enabled !== false ? ' checked' : '') + '> Show on the site</label>' +
+    '<label class="chk"><input type="checkbox" id="f_inNav"' + (m.inNav !== false ? ' checked' : '') + '> Show in the menu</label>' +
+    '<label class="chk"><input type="checkbox" id="f_usesNav"' + (m.usesNav ? ' checked' : '') + '> Uses the menu list (like Home)</label>' +
+    '<div class="row-btns" style="margin-top:18px"><button class="btn" type="button" data-act="saveBasic"><i class="fas fa-floppy-disk"></i> ' + (isNew ? 'Create module' : 'Save') + '</button>' +
+    (isNew ? '' : '<button class="btn danger" type="button" data-act="delete"><i class="fas fa-trash"></i> Delete</button>') + '</div></div>';
+}
+function syncSource() { var s = $('#f_source'), r = $('#fileRow'); if (s && r) r.hidden = s.value !== 'file'; }
+function saveBasic() {
+  var v = function (id) { return $('#' + id).value.trim(); };
+  var id = isNew ? slug(v('f_id')) : editId;
+  if (!id) { toast('Enter a module ID.', true); return; }
+  if (isNew && MODS[id]) { toast('This ID already exists.', true); return; }
+  var type = v('f_type'), source = v('f_source'), route = slug(v('f_route')) || id, file = v('f_file');
+  if (type === 'page') {
+    var clash = Object.keys(MODS).some(function (k) { return k !== id && (MODS[k].type || 'page') === 'page' && String(MODS[k].route || k) === route; });
+    if (clash) { toast('Another page already uses this address.', true); return; }
+  }
+  if (source === 'file' && (!/^[\w\-./]+\.js$/.test(file) || file.indexOf('..') !== -1)) { toast('The file path is not valid. Example: saif/tv.js', true); return; }
+  var data = {
+    title: v('f_title') || id, route: route, icon: v('f_icon') || 'fa-cube', desc: v('f_desc'),
+    type: type, source: source, file: source === 'file' ? file : null,
+    enabled: $('#f_enabled').checked, inNav: $('#f_inNav').checked, usesNav: $('#f_usesNav').checked, updatedAt: TS
+  };
+  if (isNew) {
+    var order = sortedMods().reduce(function (mx, m) { return Math.max(mx, m.order || 0); }, 0) + 1;
+    var full = Object.assign({}, data, { order: order, version: source === 'panel' ? 1 : 0, settings: null, schema: null });
+    var upd = {}; upd['modules/' + id] = full;
+    if (source === 'panel') upd['code/' + id] = NEW_CODE;
+    SITE.update(upd).then(function () { toast('Module created.'); openEditor(id, false); editTab = 'code'; renderEditor(); }).catch(fail);
+  } else {
+    updateMod(id, data);
+  }
+}
+function deleteModule() {
+  if (!ask('Delete the module "' + editId + '"? Its code and old versions will be removed too.')) return;
+  var id = editId, upd = {};
+  upd['modules/' + id] = null; upd['code/' + id] = null; upd['history/' + id] = null;
+  SITE.update(upd).then(function () { toast('Deleted.'); }).catch(fail);
+}
+
+/* ---- Settings ---- */
+function fieldHTML(f, val) {
+  var k = esc(f.key), l = esc(f.label || f.key);
+  if (f.type === 'toggle') return '<label class="chk"><input type="checkbox" data-k="' + k + '"' + (val ? ' checked' : '') + '> ' + l + '</label>';
+  if (f.type === 'textarea') return '<div class="fg"><label>' + l + '</label><textarea rows="4" data-k="' + k + '">' + esc(val) + '</textarea></div>';
+  if (f.type === 'number') return '<div class="fg"><label>' + l + '</label><input type="number" step="any" inputmode="decimal" data-k="' + k + '" value="' + esc(val) + '"></div>';
+  if (f.type === 'color') return '<div class="fg"><label>' + l + '</label><input type="color" data-k="' + k + '" value="' + esc(val || '#ffffff') + '"></div>';
+  if (f.type === 'select') {
+    var opts = Array.isArray(f.options) ? f.options : [];
+    return '<div class="fg"><label>' + l + '</label><select data-k="' + k + '">' + opts.map(function (o) { return '<option value="' + esc(o) + '"' + (String(val) === String(o) ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select></div>';
+  }
+  return '<div class="fg"><label>' + l + '</label><input type="' + (f.type === 'url' ? 'url' : 'text') + '" data-k="' + k + '" value="' + esc(val) + '"></div>';
+}
+function settingsHTML(m) {
+  var schema = Array.isArray(m.schema) ? m.schema : [], vals = m.settings || {};
+  var fields = schema.length ? schema.map(function (f) { return fieldHTML(f, vals[f.key]); }).join('') :
+    '<div class="note">This module has no settings fields yet. Add fields in the Schema box below and a form will appear here.</div>';
+  return '<div class="panel" id="settingsForm">' + fields +
+    (schema.length ? '<div class="row-btns"><button class="btn" type="button" data-act="saveSettings"><i class="fas fa-floppy-disk"></i> Save settings</button></div>' : '') + '</div>' +
+    '<details><summary>Advanced: settings fields (Schema)</summary><div class="panel"><div class="hint" style="margin:0 0 10px">Each field looks like {"key":"name","label":"Name","type":"text"}. Types: text, textarea, url, number, toggle, color, select (select also needs "options":["a","b"]).</div>' +
+    '<textarea id="schemaBox" class="code" rows="10" spellcheck="false" autocapitalize="off"></textarea>' +
+    '<div class="row-btns"><button class="btn ghost" type="button" data-act="saveSchema">Save fields</button></div></div></details>';
+}
+function afterSettingsRender() { var b = $('#schemaBox'); if (b) b.value = JSON.stringify((curMeta().schema) || [], null, 2); }
+function saveSettings() {
+  var out = {};
+  $$('#settingsForm [data-k]').forEach(function (el) {
+    var k = el.dataset.k;
+    if (el.type === 'checkbox') { out[k] = el.checked; return; }
+    var val = el.value.trim(); if (val === '') return;
+    out[k] = el.type === 'number' ? Number(val) : val;
+  });
+  SITE.child('modules/' + editId + '/settings').set(Object.keys(out).length ? out : null)
+    .then(function () { toast('Saved. The site updates right away.'); }).catch(fail);
+}
+function saveSchema() {
+  var arr;
+  try { arr = JSON.parse($('#schemaBox').value || '[]'); } catch (e) { toast('That is not valid JSON: ' + e.message, true); return; }
+  var types = ['text', 'textarea', 'url', 'number', 'toggle', 'color', 'select'];
+  var ok = Array.isArray(arr) && arr.every(function (f) {
+    return f && typeof f.key === 'string' && /^[A-Za-z0-9_]+$/.test(f.key) && (!f.type || types.indexOf(f.type) !== -1) &&
+      (f.type !== 'select' || (Array.isArray(f.options) && f.options.length));
+  });
+  if (!ok) { toast('Every field needs a "key" (letters and numbers), a valid type, and select fields need "options".', true); return; }
+  SITE.child('modules/' + editId + '/schema').set(arr.length ? arr : null)
+    .then(function () { toast('Fields saved.'); renderEdBody(); }).catch(fail);
+}
+
+/* ---- Code ---- */
+function syntaxError(code) {
+  try { new Function('ctx', '"use strict";return (async()=>{' + code + '\n})();'); return ''; }
+  catch (e) { return e.message; }
+}
+function codeTab(m) {
+  var body = $('#edBody'), tab = editTab;
+  if (m.source === 'file') {
+    body.innerHTML = '<div class="note">This module loads its code from the file <b>' + esc(m.file || '') + '</b> on your hosting. Upload a new version of that file to change it. To edit the code here instead, go to the Basic tab and set "Where the code lives" to Panel.</div>';
+    return;
+  }
+  body.innerHTML = '<div class="note">Loading...</div>';
+  SITE.child('code/' + editId).once('value').then(function (snap) {
+    if (editTab !== tab) return;
+    body.innerHTML = '<div class="fg"><label>JavaScript</label><textarea id="codeBox" class="code" rows="18" spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></div>' +
+      '<div id="codeMsg" class="note" hidden></div>' +
+      '<div class="row-btns"><button class="btn ghost" type="button" data-act="check"><i class="fas fa-circle-check"></i> Check code</button>' +
+      '<label class="btn ghost" style="cursor:pointer"><i class="fas fa-file-arrow-up"></i> Load .js file<input type="file" id="jsFile" accept=".js,text/javascript" hidden></label>' +
+      (STARTERS[editId] ? '<button class="btn ghost" type="button" data-act="starterCode"><i class="fas fa-rotate-left"></i> Starter code</button>' : '') +
+      '<button class="btn" type="button" data-act="saveCode"><i class="fas fa-cloud-arrow-up"></i> Save and publish</button></div>';
+    $('#codeBox').value = snap.val() || '';
+  }).catch(fail);
+}
+function codeMsg(text, cls) { var el = $('#codeMsg'); if (!el) return; el.hidden = !text; el.className = 'note ' + (cls || ''); el.textContent = text; }
+function checkCode() {
+  var err = syntaxError($('#codeBox').value);
+  codeMsg(err ? 'There is a mistake in the code: ' + err : 'The code looks fine. (It was only checked for typing mistakes, not run.)', err ? 'bad' : 'ok');
+  return !err;
+}
+function saveCodeText(id, code, label) {
+  var err = syntaxError(code);
+  if (err) { toast('There is a mistake in the code, nothing was saved: ' + err, true); return Promise.resolve(false); }
+  var m = MODS[id] || {}, ver = (m.version || 0) + 1;
+  return SITE.child('code/' + id).once('value').then(function (snap) {
+    var old = snap.val(), upd = {};
+    upd['code/' + id] = code;
+    upd['modules/' + id + '/version'] = ver;
+    upd['modules/' + id + '/updatedAt'] = TS;
+    if (typeof old === 'string' && old !== code) {
+      var key = SITE.child('history/' + id).push().key;
+      upd['history/' + id + '/' + key] = { code: old, version: m.version || 0, ts: TS };
+    }
+    return SITE.update(upd);
+  }).then(function () { return pruneHistory(id); })
+    .then(function () { if (label !== null) toast(label || 'Saved and live.'); return true; })
+    .catch(function (e) { fail(e); return false; });
+}
+function pruneHistory(id) {
+  return SITE.child('history/' + id).once('value').then(function (snap) {
+    var raw = snap.val() || {};
+    var items = Object.keys(raw).map(function (k) { return [k, raw[k].ts || 0]; }).sort(function (a, b) { return a[1] - b[1]; });
+    if (items.length <= 10) return;
+    var upd = {}; items.slice(0, items.length - 10).forEach(function (it) { upd['history/' + id + '/' + it[0]] = null; });
+    return SITE.update(upd);
+  }).catch(function () {});
+}
+
+/* ---- History ---- */
+function historyTab() {
+  var body = $('#edBody'), tab = editTab;
+  body.innerHTML = '<div class="note">Loading...</div>';
+  SITE.child('history/' + editId).once('value').then(function (snap) {
+    if (editTab !== tab) return;
+    var raw = snap.val() || {};
+    var items = Object.keys(raw).map(function (k) { return Object.assign({ k: k }, raw[k]); }).sort(function (a, b) { return (b.ts || 0) - (a.ts || 0); });
+    HIST = {}; items.forEach(function (it) { HIST[it.k] = it; });
+    body.innerHTML = items.length ? items.map(function (it) {
+      var when = ''; try { when = new Date(it.ts).toLocaleString(); } catch (e) {}
+      return '<div class="hist"><div><b>Version ' + (it.version || 0) + '</b><small>' + esc(when) + '</small><small>' + String((it.code || '').length) + ' characters</small></div><button class="btn sm" type="button" data-act="restore" data-k="' + esc(it.k) + '">Restore</button></div>';
+    }).join('') : '<div class="note">No older versions yet. When you save new code, the previous code is kept here. The last 10 versions are stored.</div>';
+  }).catch(fail);
+}
+
+/* ---- editor click handling ---- */
+$('#editor').addEventListener('click', function (e) {
+  var st = e.target.closest('button[data-st]');
+  if (st) { editTab = st.dataset.st; renderEditor(); return; }
+  var b = e.target.closest('button[data-act]'); if (!b) return;
+  var act = b.dataset.act;
+  if (act === 'back') closeEditor();
+  else if (act === 'saveBasic') saveBasic();
+  else if (act === 'delete') deleteModule();
+  else if (act === 'saveSettings') saveSettings();
+  else if (act === 'saveSchema') saveSchema();
+  else if (act === 'check') checkCode();
+  else if (act === 'saveCode') { if (checkCode()) saveCodeText(editId, $('#codeBox').value); }
+  else if (act === 'starterCode') {
+    if (ask('Put the starter code back and publish it? Your current code will be kept in History.'))
+      saveCodeText(editId, fnBody(STARTER_FNS[STARTERS[editId].fn]), 'Starter code is back.').then(function () { renderEdBody(); });
+  }
+  else if (act === 'restore') {
+    var it = HIST[b.dataset.k]; if (!it) return;
+    if (ask('Restore version ' + (it.version || 0) + '? Your current code will be kept in History.'))
+      saveCodeText(editId, it.code, 'Older version restored.').then(function () { historyTab(); });
+  }
+});
+$('#editor').addEventListener('change', function (e) {
+  if (e.target.id === 'f_source') syncSource();
+  if (e.target.id === 'jsFile') {
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () { $('#codeBox').value = String(r.result); codeMsg('Code loaded from the file. Tap Check code, then Save and publish.', 'ok'); };
+    r.readAsText(f); e.target.value = '';
+  }
+});
+
+/* ================= BACKUP ================= */
+function renderBackup() {
+  $('#tab-backup').innerHTML = '<h2 class="title">Backup</h2>' +
+    '<div class="panel"><div class="note">Downloads every module, its code, its settings and its history as one file. Keep one before big changes.</div><button class="btn" type="button" id="doExport"><i class="fas fa-download"></i> Download backup</button></div>' +
+    '<div class="panel"><div class="note bad">Restoring replaces all current site data with the data in the file.</div>' +
+    '<label class="btn ghost" style="cursor:pointer"><i class="fas fa-upload"></i> Restore from file<input type="file" id="doImport" accept=".json,application/json" hidden></label></div>';
+  $('#doExport').onclick = function () {
+    SITE.once('value').then(function (snap) {
+      var blob = new Blob([JSON.stringify(snap.val() || {}, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = 'site-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+      document.body.appendChild(a); a.click(); a.remove(); toast('Backup downloaded.');
+    }).catch(fail);
+  };
+  $('#doImport').onchange = function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      var data; try { data = JSON.parse(String(r.result)); } catch (er) { toast('That file is not valid JSON.', true); return; }
+      if (!data || typeof data !== 'object' || Array.isArray(data)) { toast('The data inside the file is not valid.', true); return; }
+      if (!ask('All current site data will be replaced by the file. Are you sure?')) return;
+      SITE.set(data).then(function () { toast('Restored.'); }).catch(fail);
+    };
+    r.readAsText(f); e.target.value = '';
+  };
+}
+})();
+</script>
+</body>
+</html>
